@@ -2,19 +2,16 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Users, LayoutGrid, CalendarCheck } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import { useStore } from '../store.jsx'
-import { ZONES } from '../data.js'
+import { AREAS, seatsOfArea } from '../data.js'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { currentUser, activeBookings, isTableOccupied } = useStore()
+  const { currentUser, activeBookings, isSeatBooked } = useStore()
 
   // นับที่นั่งว่างของแต่ละโซนแบบเรียลไทม์
-  const zoneStats = ZONES.map((zone) => {
-    let occupied = 0
-    for (let i = 1; i <= zone.tableCount; i++) {
-      if (isTableOccupied(zone.id, i)) occupied++
-    }
-    return { ...zone, occupied, available: zone.tableCount - occupied }
+  const zoneStats = AREAS.map((zone) => {
+    const occupied = seatsOfArea(zone.id).filter((s) => isSeatBooked(s.id)).length
+    return { ...zone, occupied, available: zone.seatCount - occupied }
   })
 
   return (
@@ -63,7 +60,7 @@ export default function Dashboard() {
               >
                 <span className="text-5xl drop-shadow-sm">{zone.emoji}</span>
                 <span className="absolute right-3 top-3 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                  {zone.kind === 'room' ? `${zone.tableCount} ห้อง` : `${zone.tableCount} โต๊ะ`}
+                  {zone.seatCount} ที่นั่ง
                 </span>
               </div>
 
@@ -78,13 +75,13 @@ export default function Dashboard() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-xl bg-sage-50 px-3 py-2">
                     <p className="text-lg font-bold text-sage-700">{zone.available}</p>
-                    <p className="text-xs text-sage-600">ว่าง</p>
+                    <p className="text-xs text-sage-600">ที่นั่งว่าง</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 px-3 py-2">
-                    <p className="flex items-center gap-1 text-sm font-semibold text-slate-600">
-                      <Users className="h-3.5 w-3.5" /> {zone.capacity}
+                    <p className="flex items-center gap-1 text-lg font-bold text-slate-600">
+                      <Users className="h-4 w-4" /> {zone.seatCount}
                     </p>
-                    <p className="text-xs text-slate-400">ความจุ</p>
+                    <p className="text-xs text-slate-400">ทั้งหมด</p>
                   </div>
                 </div>
 

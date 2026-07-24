@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import {
   ArrowLeft,
-  Armchair,
-  DoorOpen,
   X,
   Calendar,
   Clock,
@@ -12,47 +10,59 @@ import {
   CheckCircle2,
   BadgeCheck,
   Copy,
-  Sofa,
+  MapPin,
 } from 'lucide-react'
 import Header from '../components/Header.jsx'
+import RoomFloorPlan from '../components/RoomFloorPlan.jsx'
 import { useStore } from '../store.jsx'
-import { getZone, buildTables, TIME_SLOTS } from '../data.js'
+import { getArea, getSeat, seatLabel, QUICK_TIMES } from '../data.js'
 
-// วันที่ต่ำสุดที่จองได้ = วันนี้ (ใช้เวลาท้องถิ่น ไม่ใช่ UTC เพื่อไม่ให้เพี้ยนข้ามวัน)
-const today = (() => {
+// วันที่วันนี้ (เวลาท้องถิ่น)
+const localToday = () => {
   const d = new Date()
-  const offsetMs = d.getTimezoneOffset() * 60000
-  return new Date(d.getTime() - offsetMs).toISOString().split('T')[0]
-})()
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+}
+const AREA_NAMES = { bar: 'โซนโต๊ะบาร์', pods: 'โซนทำงานส่วนตัวขั้นสุด', flex: 'โซนโต๊ะเดี่ยวสไตล์มินิมอล' }
 
 export default function ZonePage() {
   const { zoneId } = useParams()
   const navigate = useNavigate()
-  const { currentUser, isTableOccupied, createBooking, pushToast } = useStore()
+  const { currentUser, isSeatBooked, createBooking, pushToast } = useStore()
 
-  const zone = getZone(zoneId)
-  const [selected, setSelected] = useState(null) // โต๊ะที่กำลังเลือก (สำหรับ modal จอง)
-  const [date, setDate] = useState(today)
-  const [slotId, setSlotId] = useState(TIME_SLOTS[0].id)
-  const [receipt, setReceipt] = useState(null) // ใบเสร็จหลังจองสำเร็จ
+  const area = getArea(zoneId)
+  const [selected, setSelected] = useState(null) // ที่นั่งที่กำลังเลือก
+  const [date, setDate] = useState(localToday())
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('12:00')
+  const [timeError, setTimeError] = useState('')
+  const [receipt, setReceipt] = useState(null)
 
-  if (!zone) return <Navigate to="/dashboard" replace />
+  if (!area) return <Navigate to="/dashboard" replace />
 
-  const tables = buildTables(zone)
-  const isRoom = zone.kind === 'room'
-
-  const openBooking = (table) => {
-    setSelected(table)
-    setDate(today)
-    setSlotId(TIME_SLOTS[0].id)
+  const openBooking = (seat) => {
+    setSelected(seat)
+    setDate(localToday())
+    setStartTime('09:00')
+    setEndTime('12:00')
+    setTimeError('')
   }
 
   const confirmBooking = () => {
-    const slot = TIME_SLOTS.find((s) => s.id === slotId)
-    const booking = createBooking({ zoneId, table: selected, date, slot: slot.label })
+    // ตรวจสอบเวลา: ต้องกรอกครบ และเวลาสิ้นสุดต้องหลังเวลาเริ่ม
+    if (!date) return setTimeError('กรุณาเลือกวันที่')
+    if (!startTime || !endTime) return setTimeError('กรุณากรอกเวลาเริ่มและเวลาสิ้นสุด')
+    if (endTime <= startTime) return setTimeError('เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม')
+
+    const booking = createBooking({
+      areaId: getSeat(selected.id).area,
+      seatId: selected.id,
+      date,
+      startTime,
+      endTime,
+    })
     setSelected(null)
     setReceipt(booking)
-    pushToast(`จอง ${booking.tableLabel} สำเร็จแล้ว!`, 'success')
+    pushToast(`จอง ${booking.seatLabel} สำเร็จแล้ว!`, 'success')
   }
 
   const copyRef = (ref) => {
@@ -60,12 +70,13 @@ export default function ZonePage() {
     pushToast('คัดลอกรหัสอ้างอิงแล้ว', 'info')
   }
 
+  const selectedArea = selected ? getSeat(selected.id).area : null
+
   return (
     <div className="min-h-screen">
       <Header />
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        {/* ปุ่มย้อนกลับ + หัวข้อโซน */}
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         <button
           onClick={() => navigate('/dashboard')}
           className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slateblue-600"
@@ -73,75 +84,45 @@ export default function ZonePage() {
           <ArrowLeft className="h-4 w-4" /> กลับไปหน้าเลือกโซน
         </button>
 
+        {/* หัวข้อโซน + legend */}
         <div className="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-center gap-4">
             <span
-              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${zone.gradient} text-3xl`}
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${area.gradient} text-3xl`}
             >
-              {zone.emoji}
+              {area.emoji}
             </span>
             <div>
-              <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">{zone.nameTh}</h1>
+              <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">{area.nameTh}</h1>
               <p className="text-sm text-slate-500">
-                {zone.name} · {zone.capacity}
+                {area.name} · {area.seatCount} ที่นั่ง
               </p>
             </div>
           </div>
 
-          {/* คำอธิบายสถานะ (Legend) */}
           <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-            <Legend color="bg-sage-400" label="ว่าง" en="Available" />
+            <Legend color="bg-emerald-500" label="ว่าง" en="Available" />
             <Legend color="bg-amber-400" label="กำลังเลือก" en="Selected" />
-            <Legend color="bg-red-400" label="จองแล้ว" en="Occupied" />
+            <Legend color="bg-red-500" label="จองแล้ว" en="Occupied" />
           </div>
         </div>
 
-        {/* ผังที่นั่ง */}
-        <div className="mt-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-8">
-          <div className="mb-6 flex items-center justify-center gap-2 rounded-xl bg-slateblue-50 py-2 text-sm font-medium text-slateblue-700">
-            <DoorOpen className="h-4 w-4" /> ทางเข้า–ออก / Entrance
+        {/* คำอธิบาย + ผังห้อง */}
+        <div className="mt-6 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-slateblue-50 px-4 py-2.5 text-sm text-slateblue-700">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span>
+              นี่คือผังห้องจริงแบบมุมสูง — โซน <b>{area.nameTh}</b> ถูกไฮไลต์ไว้
+              คลิกที่นั่งสีเขียวเพื่อจอง (คลิกที่นั่งโซนอื่นก็จองได้)
+            </span>
           </div>
 
-          <div
-            className="grid gap-3 sm:gap-4"
-            style={{
-              gridTemplateColumns: `repeat(${isRoom ? 2 : zone.columns}, minmax(0, 1fr))`,
-            }}
-          >
-            {tables.map((table) => {
-              const occupied = isTableOccupied(zoneId, table.id)
-              const isSelected = selected?.id === table.id
-
-              // สีตามสถานะ
-              let cls =
-                'border-sage-200 bg-sage-50 text-sage-700 hover:border-sage-400 hover:bg-sage-100 hover:shadow-md cursor-pointer'
-              if (occupied)
-                cls =
-                  'border-red-100 bg-red-50 text-red-300 cursor-not-allowed opacity-70'
-              if (isSelected)
-                cls = 'border-amber-400 bg-amber-100 text-amber-700 ring-2 ring-amber-200'
-
-              const Icon = isRoom ? Sofa : Armchair
-
-              return (
-                <button
-                  key={table.id}
-                  disabled={occupied}
-                  onClick={() => openBooking(table)}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 transition ${cls} ${
-                    isRoom ? 'py-8' : 'py-5'
-                  }`}
-                  title={occupied ? `${table.label} · จองแล้ว` : `${table.label} · ว่าง`}
-                >
-                  <Icon className={isRoom ? 'h-8 w-8' : 'h-5 w-5'} />
-                  <span className={`font-semibold ${isRoom ? 'text-sm' : 'text-xs'}`}>
-                    {table.label}
-                  </span>
-                  {occupied && <span className="text-[10px] font-medium">จองแล้ว</span>}
-                </button>
-              )
-            })}
-          </div>
+          <RoomFloorPlan
+            activeArea={zoneId}
+            selectedId={selected?.id}
+            isSeatBooked={isSeatBooked}
+            onSelect={openBooking}
+          />
         </div>
       </main>
 
@@ -149,11 +130,13 @@ export default function ZonePage() {
       {selected && (
         <Overlay onClose={() => setSelected(null)}>
           <div className="animate-pop w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className={`bg-gradient-to-br ${zone.gradient} px-6 py-5 text-white`}>
+            <div
+              className={`bg-gradient-to-br ${getArea(selectedArea).gradient} px-6 py-5 text-white`}
+            >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium opacity-90">{zone.nameTh}</p>
-                  <h3 className="text-xl font-bold">{selected.label}</h3>
+                  <p className="text-xs font-medium opacity-90">{AREA_NAMES[selectedArea]}</p>
+                  <h3 className="text-xl font-bold">{seatLabel(selected.id)}</h3>
                 </div>
                 <button
                   onClick={() => setSelected(null)}
@@ -165,44 +148,74 @@ export default function ZonePage() {
             </div>
 
             <div className="space-y-4 p-6">
-              {/* เลือกวันที่ */}
+              {/* วันที่ */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                   <Calendar className="h-4 w-4 text-slateblue-500" /> เลือกวันที่
                 </label>
                 <input
                   type="date"
-                  min={today}
+                  min={localToday()}
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => {
+                    setDate(e.target.value)
+                    setTimeError('')
+                  }}
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-slateblue-400 focus:ring-2 focus:ring-slateblue-100"
                 />
               </div>
 
-              {/* เลือกช่วงเวลา */}
+              {/* เวลาเริ่ม–สิ้นสุด (กรอกเองได้) */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                  <Clock className="h-4 w-4 text-slateblue-500" /> เลือกช่วงเวลา
+                  <Clock className="h-4 w-4 text-slateblue-500" /> ระบุเวลาที่จะใช้งาน
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {TIME_SLOTS.map((s) => (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value)
+                      setTimeError('')
+                    }}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-slateblue-400 focus:ring-2 focus:ring-slateblue-100"
+                  />
+                  <span className="text-slate-400">–</span>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => {
+                      setEndTime(e.target.value)
+                      setTimeError('')
+                    }}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-slateblue-400 focus:ring-2 focus:ring-slateblue-100"
+                  />
+                </div>
+
+                {/* ปุ่มลัดเติมเวลา */}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="text-xs text-slate-400">เลือกเร็ว:</span>
+                  {QUICK_TIMES.map((q) => (
                     <button
-                      key={s.id}
-                      onClick={() => setSlotId(s.id)}
-                      className={`rounded-xl border px-2 py-2.5 text-center transition ${
-                        slotId === s.id
-                          ? 'border-slateblue-400 bg-slateblue-50 text-slateblue-700 ring-2 ring-slateblue-100'
-                          : 'border-slate-200 text-slate-600 hover:border-slateblue-300'
-                      }`}
+                      key={q.label}
+                      onClick={() => {
+                        setStartTime(q.start)
+                        setEndTime(q.end)
+                        setTimeError('')
+                      }}
+                      className="rounded-full border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600 transition hover:border-slateblue-300 hover:bg-slateblue-50"
                     >
-                      <span className="block text-xs font-bold">{s.label}</span>
-                      <span className="block text-[10px] text-slate-400">{s.sub}</span>
+                      {q.label} {q.start}-{q.end}
                     </button>
                   ))}
                 </div>
+
+                {timeError && (
+                  <p className="mt-2 text-xs font-medium text-red-500">{timeError}</p>
+                )}
               </div>
 
-              {/* ข้อมูลผู้จอง (เติมจากล็อกอินอัตโนมัติ) */}
+              {/* ข้อมูลผู้จอง */}
               <div className="rounded-2xl bg-slate-50 p-4">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   ข้อมูลผู้จอง
@@ -230,7 +243,7 @@ export default function ZonePage() {
         </Overlay>
       )}
 
-      {/* ---------- Modal ใบเสร็จ (สำเร็จ) ---------- */}
+      {/* ---------- Modal ใบเสร็จ ---------- */}
       {receipt && (
         <Overlay onClose={() => setReceipt(null)}>
           <div className="animate-slide-up w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
@@ -243,7 +256,6 @@ export default function ZonePage() {
             </div>
 
             <div className="p-6">
-              {/* รหัสอ้างอิง */}
               <div className="flex items-center justify-between rounded-2xl border-2 border-dashed border-sage-300 bg-sage-50 px-4 py-3">
                 <div>
                   <p className="text-xs text-sage-600">รหัสอ้างอิงการจอง</p>
@@ -259,12 +271,11 @@ export default function ZonePage() {
                 </button>
               </div>
 
-              {/* รายละเอียด */}
               <dl className="mt-4 space-y-2.5 text-sm">
-                <Row label="โซน" value={zone.nameTh} />
-                <Row label="ที่นั่ง" value={receipt.tableLabel} />
+                <Row label="โซน" value={AREA_NAMES[receipt.areaId]} />
+                <Row label="ที่นั่ง" value={receipt.seatLabel} />
                 <Row label="วันที่" value={receipt.date} />
-                <Row label="เวลา" value={receipt.slot} />
+                <Row label="เวลา" value={receipt.timeLabel} />
                 <Row label="ผู้จอง" value={receipt.userName} />
                 <Row label="เบอร์ติดต่อ" value={receipt.phone} />
               </dl>
@@ -312,7 +323,6 @@ function Row({ label, value }) {
   )
 }
 
-// ฉากหลังทึบสำหรับ modal — คลิกนอกกล่องเพื่อปิด
 function Overlay({ children, onClose }) {
   return (
     <div

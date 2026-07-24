@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { ZONES } from './data.js'
+import { seatLabel } from './data.js'
 
 const StoreContext = createContext(null)
 
@@ -83,31 +83,25 @@ export function StoreProvider({ children }) {
   const logout = useCallback(() => setCurrentUser(null), [])
 
   // ---------- การจอง ----------
-  // เช็คว่าโต๊ะนี้ในโซนนี้ ถูกจองไปแล้วหรือยัง (นับทั้ง seeded และการจองของผู้ใช้)
-  const isTableOccupied = useCallback(
-    (zoneId, tableId) => {
-      const zone = ZONES.find((z) => z.id === zoneId)
-      if (zone?.seededOccupied?.includes(tableId)) return true
-      return bookings.some(
-        (b) =>
-          b.zoneId === zoneId &&
-          b.tableId === tableId &&
-          b.status === 'active'
-      )
-    },
+  // เช็คว่าที่นั่งนี้ถูกจองไปแล้วหรือยัง (นับเฉพาะการจองที่ยังใช้งานอยู่)
+  const isSeatBooked = useCallback(
+    (seatId) =>
+      bookings.some((b) => b.seatId === seatId && b.status === 'active'),
     [bookings]
   )
 
   const createBooking = useCallback(
-    ({ zoneId, table, date, slot }) => {
+    ({ areaId, seatId, date, startTime, endTime }) => {
       const ref = makeRef()
       const booking = {
         ref,
-        zoneId,
-        tableId: table.id,
-        tableLabel: table.label,
+        areaId,
+        seatId,
+        seatLabel: seatLabel(seatId),
         date,
-        slot,
+        startTime,
+        endTime,
+        timeLabel: `${startTime} - ${endTime}`,
         userName: currentUser
           ? `${currentUser.firstName} ${currentUser.lastName}`
           : 'ผู้ใช้',
@@ -141,7 +135,7 @@ export function StoreProvider({ children }) {
     register,
     login,
     logout,
-    isTableOccupied,
+    isSeatBooked,
     createBooking,
     cancelBooking,
   }

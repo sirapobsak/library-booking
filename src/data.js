@@ -1,74 +1,103 @@
 // ------------------------------------------------------------
-// ข้อมูลจำลอง (Mock Data) สำหรับระบบจองห้องสมุด
-// แก้ตรงนี้ได้เลยถ้าอยากเปลี่ยนจำนวนโต๊ะ / โซน / ช่วงเวลา
+// ข้อมูลห้องทำงาน — โครงสร้างอิงจากผังห้องจริง (ภาพมุมสูง)
+// มี 3 โซนในห้องเดียว รวมทั้งหมด 30 ที่นั่ง (เลข 1–30)
+//   • โซนโต๊ะบาร์ (Bar PC Counter)         ที่นั่ง 1–8
+//   • โซนทำงานส่วนตัวขั้นสุด (Solo Focus Pods) ที่นั่ง 9–20
+//   • โซนโต๊ะเดี่ยวสไตล์มินิมอล (Flex Solo Desks) ที่นั่ง 21–30
+// พิกัด x,y เป็นเปอร์เซ็นต์บนผังห้อง (อิงตำแหน่งจากรูป)
 // ------------------------------------------------------------
 
-// ช่วงเวลาที่ให้จอง
-export const TIME_SLOTS = [
-  { id: 'morning', label: '09:00 - 12:00', sub: 'ช่วงเช้า' },
-  { id: 'afternoon', label: '13:00 - 16:00', sub: 'ช่วงบ่าย' },
-  { id: 'evening', label: '17:00 - 20:00', sub: 'ช่วงเย็น' },
+// โซน (พื้นที่) ต่าง ๆ ในห้อง
+export const AREAS = [
+  {
+    id: 'bar',
+    name: 'Bar PC Counter',
+    nameTh: 'โซนโต๊ะบาร์',
+    description: 'เคาน์เตอร์บาร์ริมหน้าต่าง พร้อมคอมพิวเตอร์ บรรยากาศโปร่ง เหมาะกับงานเร็ว ๆ',
+    seatCount: 8,
+    range: [1, 8],
+    emoji: '🖥️',
+    gradient: 'from-slateblue-500 to-slateblue-700',
+    accent: 'slateblue',
+  },
+  {
+    id: 'pods',
+    name: 'Solo Focus PC Pods',
+    nameTh: 'โซนทำงานส่วนตัวขั้นสุด',
+    description: 'ห้องเล็กส่วนตัวมีผนังกั้น พร้อมคอมพิวเตอร์ เหมาะกับงานที่ต้องโฟกัสสูง',
+    seatCount: 12,
+    range: [9, 20],
+    emoji: '🧑‍💻',
+    gradient: 'from-sage-500 to-sage-700',
+    accent: 'sage',
+  },
+  {
+    id: 'flex',
+    name: 'Flex Solo Desks',
+    nameTh: 'โซนโต๊ะเดี่ยวสไตล์มินิมอล',
+    description: 'โต๊ะเดี่ยวยืดหยุ่น จัดเป็นกลุ่ม เหมาะกับการอ่านหนังสือหรือทำงานทั่วไป',
+    seatCount: 10,
+    range: [21, 30],
+    emoji: '🪑',
+    gradient: 'from-amber-500 to-orange-600',
+    accent: 'amber',
+  },
 ]
 
-// รายละเอียดของแต่ละโซน
-export const ZONES = [
-  {
-    id: 'working',
-    name: 'Working Zone',
-    nameTh: 'โซนทำงาน',
-    description: 'พื้นที่ทำงานความจุสูง เหมาะกับการทำงานกลุ่มและงานที่ต้องใช้สมาธิแบบยืดหยุ่น',
-    tableCount: 30,
-    capacity: 'นั่งได้ 1 ที่/โต๊ะ',
-    kind: 'desk', // desk = โต๊ะเดี่ยว
-    columns: 6, // จำนวนคอลัมน์ตอนวาดผัง
-    accent: 'slateblue',
-    gradient: 'from-slateblue-500 to-slateblue-700',
-    emoji: '💻',
-    // โต๊ะที่ "มีคนจองอยู่แล้ว" ตั้งแต่เริ่ม (จำลอง)
-    seededOccupied: [2, 5, 9, 14, 18, 23, 27],
-  },
-  {
-    id: 'quiet',
-    name: 'Quiet Reading Zone',
-    nameTh: 'โซนอ่านหนังสือ',
-    description: 'พื้นที่เงียบสงบสำหรับอ่านหนังสือและงานที่ต้องใช้สมาธิสูงแบบเต็มที่',
-    tableCount: 24,
-    capacity: 'นั่งได้ 1 ที่/โต๊ะ',
-    kind: 'desk',
-    columns: 6,
-    accent: 'sage',
-    gradient: 'from-sage-500 to-sage-700',
-    emoji: '📚',
-    seededOccupied: [3, 7, 11, 16, 20],
-  },
-  {
-    id: 'meeting',
-    name: 'Meeting Room Zone',
-    nameTh: 'โซนห้องประชุม',
-    description: 'ห้องประชุมส่วนตัวสำหรับการประชุมกลุ่ม จำนวนน้อยแต่จุคนได้มากต่อห้อง',
-    tableCount: 6,
-    capacity: 'จุได้ 6-10 คน/ห้อง',
-    kind: 'room', // room = ห้องประชุมกล่องใหญ่
-    columns: 3,
-    accent: 'amber',
-    gradient: 'from-amber-500 to-orange-600',
-    emoji: '🧑‍🤝‍🧑',
-    seededOccupied: [2, 5],
-  },
+// ที่นั่งทั้งหมด 30 ตัว พร้อมพิกัดบนผังห้อง (x,y เป็น %)
+export const SEATS = [
+  // --- โซนโต๊ะบาร์ (แถวยาวด้านบน ริมหน้าต่าง) ---
+  { id: 1, area: 'bar', x: 19, y: 30 },
+  { id: 2, area: 'bar', x: 24.5, y: 30 },
+  { id: 3, area: 'bar', x: 30, y: 30 },
+  { id: 4, area: 'bar', x: 35.5, y: 30 },
+  { id: 5, area: 'bar', x: 41, y: 30 },
+  { id: 6, area: 'bar', x: 46.5, y: 30 },
+  { id: 7, area: 'bar', x: 52, y: 30 },
+  { id: 8, area: 'bar', x: 57.5, y: 30 },
+
+  // --- โซน Focus Pods (2 แถว × 6 ช่อง) ---
+  { id: 9, area: 'pods', x: 36, y: 41 },
+  { id: 10, area: 'pods', x: 43, y: 41 },
+  { id: 11, area: 'pods', x: 50, y: 41 },
+  { id: 12, area: 'pods', x: 57, y: 41 },
+  { id: 13, area: 'pods', x: 65.5, y: 41 },
+  { id: 14, area: 'pods', x: 72.5, y: 41 },
+  { id: 15, area: 'pods', x: 36, y: 62 },
+  { id: 16, area: 'pods', x: 43, y: 62 },
+  { id: 17, area: 'pods', x: 50, y: 62 },
+  { id: 18, area: 'pods', x: 57, y: 62 },
+  { id: 19, area: 'pods', x: 65.5, y: 62 },
+  { id: 20, area: 'pods', x: 72.5, y: 62 },
+
+  // --- โซน Flex Desks (กลุ่มโต๊ะด้านล่าง) ---
+  { id: 21, area: 'flex', x: 30, y: 80 },
+  { id: 22, area: 'flex', x: 39.5, y: 80 },
+  { id: 23, area: 'flex', x: 30, y: 91 },
+  { id: 24, area: 'flex', x: 39.5, y: 91 },
+  { id: 25, area: 'flex', x: 54, y: 80 },
+  { id: 26, area: 'flex', x: 64.5, y: 80 },
+  { id: 27, area: 'flex', x: 54, y: 91 },
+  { id: 28, area: 'flex', x: 64.5, y: 91 },
+  { id: 29, area: 'flex', x: 81, y: 80 },
+  { id: 30, area: 'flex', x: 81, y: 91 },
 ]
 
 // หาโซนจาก id
-export const getZone = (zoneId) => ZONES.find((z) => z.id === zoneId)
+export const getArea = (areaId) => AREAS.find((a) => a.id === areaId)
 
-// สร้างรายการโต๊ะ/ห้องของโซน (เลข 1..tableCount)
-export const buildTables = (zone) => {
-  const prefix = zone.kind === 'room' ? 'ห้อง' : 'โต๊ะ'
-  return Array.from({ length: zone.tableCount }, (_, i) => {
-    const num = i + 1
-    return {
-      id: num,
-      label: `${prefix} ${String(num).padStart(2, '0')}`,
-      shortLabel: zone.kind === 'room' ? `R${num}` : `${num}`,
-    }
-  })
-}
+// ที่นั่งของโซนนั้น ๆ
+export const seatsOfArea = (areaId) => SEATS.filter((s) => s.area === areaId)
+
+// หาที่นั่งจากหมายเลข
+export const getSeat = (seatId) => SEATS.find((s) => s.id === seatId)
+
+// ป้ายชื่อที่นั่ง เช่น "ที่นั่ง 05"
+export const seatLabel = (seatId) => `ที่นั่ง ${String(seatId).padStart(2, '0')}`
+
+// ช่วงเวลาแนะนำ (กดเพื่อเติมเวลาให้เร็ว — แต่ผู้ใช้กรอกเองได้)
+export const QUICK_TIMES = [
+  { label: 'เช้า', start: '09:00', end: '12:00' },
+  { label: 'บ่าย', start: '13:00', end: '16:00' },
+  { label: 'เย็น', start: '17:00', end: '20:00' },
+]

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import { useStore } from '../store.jsx'
-import { getZone } from '../data.js'
+import { getArea } from '../data.js'
 
 export default function MyBookings() {
   const navigate = useNavigate()
@@ -29,7 +29,7 @@ export default function MyBookings() {
     const b = bookings.find((x) => x.ref === confirmRef)
     cancelBooking(confirmRef)
     setConfirmRef(null)
-    pushToast(`ยกเลิกการจอง ${b?.tableLabel} แล้ว`, 'info')
+    pushToast(`ยกเลิกการจอง ${b?.seatLabel} แล้ว`, 'info')
   }
 
   return (
@@ -77,7 +77,7 @@ export default function MyBookings() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {active.map((b) => {
-                const zone = getZone(b.zoneId)
+                const zone = getArea(b.areaId)
                 return (
                   <div
                     key={b.ref}
@@ -89,7 +89,7 @@ export default function MyBookings() {
                       <div className="flex items-center gap-2">
                         <span className="text-xl">{zone?.emoji}</span>
                         <div>
-                          <p className="text-sm font-bold leading-tight">{b.tableLabel}</p>
+                          <p className="text-sm font-bold leading-tight">{b.seatLabel}</p>
                           <p className="text-xs opacity-90">{zone?.nameTh}</p>
                         </div>
                       </div>
@@ -100,7 +100,7 @@ export default function MyBookings() {
 
                     <div className="space-y-2 p-4 text-sm">
                       <Detail icon={Calendar} label="วันที่" value={b.date} />
-                      <Detail icon={Clock} label="เวลา" value={b.slot} />
+                      <Detail icon={Clock} label="เวลา" value={b.timeLabel} />
                       <Detail icon={Hash} label="รหัสอ้างอิง" value={b.ref} mono />
 
                       <button
@@ -126,7 +126,7 @@ export default function MyBookings() {
             </h2>
             <div className="space-y-2">
               {cancelled.map((b) => {
-                const zone = getZone(b.zoneId)
+                const zone = getArea(b.areaId)
                 return (
                   <div
                     key={b.ref}
@@ -135,7 +135,7 @@ export default function MyBookings() {
                     <div className="flex items-center gap-2 text-slate-400">
                       <MapPin className="h-4 w-4" />
                       <span className="font-medium text-slate-500 line-through">
-                        {b.tableLabel} · {zone?.nameTh}
+                        {b.seatLabel} · {zone?.nameTh}
                       </span>
                     </div>
                     <span className="font-mono text-xs text-slate-400">{b.ref}</span>
