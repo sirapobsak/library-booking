@@ -2,6 +2,10 @@
 
 ระบบจองโต๊ะและห้องประชุมในห้องสมุด สร้างด้วย **React + Vite + Tailwind CSS + Lucide Icons**
 
+🌐 **เว็บไซต์ (Live):** https://sirapobsak.github.io/library-booking/
+
+> Deploy อัตโนมัติผ่าน GitHub Actions ทุกครั้งที่ push ขึ้น branch `main`
+
 ## ✨ ฟีเจอร์
 
 - **หน้า Login / Register** — สลับแท็บได้ พร้อมตรวจสอบข้อมูล (email format, รหัสผ่านตรงกัน ฯลฯ)
