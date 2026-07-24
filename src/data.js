@@ -11,9 +11,9 @@
 export const AREAS = [
   {
     id: 'bar',
-    name: 'Bar PC Counter',
-    nameTh: 'โซนโต๊ะบาร์',
-    description: 'เคาน์เตอร์บาร์ริมหน้าต่าง พร้อมคอมพิวเตอร์ บรรยากาศโปร่ง เหมาะกับงานเร็ว ๆ',
+    name: 'Working Space',
+    nameTh: 'Working Space',
+    description: 'เคาน์เตอร์ทำงานริมหน้าต่าง พร้อมคอมพิวเตอร์ บรรยากาศโปร่ง เหมาะกับงานเร็ว ๆ',
     seatCount: 8,
     range: [1, 8],
     emoji: '🖥️',

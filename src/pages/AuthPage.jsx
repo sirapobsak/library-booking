@@ -162,7 +162,7 @@ export default function AuthPage({ mode }) {
 
           <div className="mt-8 grid grid-cols-3 gap-4">
             {[
-              { emoji: '🖥️', title: 'โซนโต๊ะบาร์', sub: '8 ที่นั่ง' },
+              { emoji: '🖥️', title: 'Working Space', sub: '8 ที่นั่ง' },
               { emoji: '🧑‍💻', title: 'Focus Pods', sub: '12 ที่นั่ง' },
               { emoji: '🪑', title: 'Flex Desks', sub: '10 ที่นั่ง' },
             ].map((c) => (
