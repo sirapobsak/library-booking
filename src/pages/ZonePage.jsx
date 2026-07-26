@@ -22,7 +22,7 @@ const localToday = () => {
   const d = new Date()
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
 }
-const AREA_NAMES = { bar: 'Working Space', pods: 'โซนโต๊ะมีที่กั้น', meeting: 'โซนห้องประชุม' }
+const AREA_NAMES = { bar: 'Counter Bar', pods: 'Computer Table', meeting: 'Meeting Room' }
 
 export default function ZonePage() {
   const { zoneId } = useParams()

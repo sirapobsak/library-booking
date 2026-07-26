@@ -32,10 +32,10 @@ export default function RoomFloorPlan({ activeArea, selectedId, isSeatBooked, on
         {/* หน้าต่างกระจก ด้านขวา (ช่วงกลาง) */}
         <WindowStrip side="right" top="28%" height="40%" label="หน้าต่าง" />
 
-        {/* ประตู (บนกลางค่อนขวา) */}
+        {/* ประตู — ย้ายมาอยู่ช่องว่างด้านขวา (ระหว่างเคาน์เตอร์กับมุมพิมพ์) */}
         <div
           className="absolute flex items-center justify-center rounded-b-md border border-black/10 text-[7px] font-bold text-amber-50 sm:text-[9px]"
-          style={{ left: '52%', top: '0', width: '11%', height: '5%', background: 'linear-gradient(180deg,#8a5a34,#6b4526)' }}
+          style={{ left: '70%', top: '0', width: '11%', height: '5%', background: 'linear-gradient(180deg,#8a5a34,#6b4526)' }}
         >
           DOOR
         </div>
@@ -104,7 +104,7 @@ export default function RoomFloorPlan({ activeArea, selectedId, isSeatBooked, on
               key={seat.id}
               disabled={booked}
               onClick={() => onSelect(seat)}
-              title={`ห้องประชุม ${seat.id} · ${booked ? 'จองแล้ว' : 'ว่าง — คลิกเพื่อจอง'}`}
+              title={`Meeting Room ${seat.id} · ${booked ? 'จองแล้ว' : 'ว่าง — คลิกเพื่อจอง'}`}
               className={`absolute flex flex-col items-center justify-center rounded-2xl border-2 border-white/70 font-extrabold text-white shadow-lg transition-all duration-200 hover:brightness-105 ${
                 !booked && !selected && !dim ? 'seat-pulse' : ''
               } ${dim ? 'opacity-40' : ''} ${booked ? 'cursor-not-allowed' : 'cursor-pointer hover:-translate-y-0.5'}`}
@@ -114,7 +114,7 @@ export default function RoomFloorPlan({ activeArea, selectedId, isSeatBooked, on
               }}
             >
               <span className="text-2xl sm:text-4xl">{seat.id}</span>
-              <span className="mt-1 text-[9px] font-semibold sm:text-xs">ห้องประชุม · {label}</span>
+              <span className="mt-1 text-[9px] font-semibold sm:text-xs">Meeting Room · {label}</span>
             </button>
           )
         })}
@@ -148,9 +148,9 @@ export default function RoomFloorPlan({ activeArea, selectedId, isSeatBooked, on
         })}
 
         {/* ป้ายชื่อโซน */}
-        <AreaTag x={24} y={5} text="Working Space (10)" active={activeArea === 'bar'} />
-        <AreaTag x={12} y={41} text="โต๊ะมีที่กั้น (10)" active={activeArea === 'pods'} />
-        <AreaTag x={10} y={63} text="ห้องประชุม (3)" active={activeArea === 'meeting'} />
+        <AreaTag x={33} y={4} text="Counter Bar (10)" active={activeArea === 'bar'} />
+        <AreaTag x={13} y={41} text="Computer Table (10)" active={activeArea === 'pods'} />
+        <AreaTag x={11} y={63} text="Meeting Room (3)" active={activeArea === 'meeting'} />
       </div>
 
       {/* คำใบ้ใต้ผัง */}

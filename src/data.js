@@ -10,8 +10,8 @@
 export const AREAS = [
   {
     id: 'bar',
-    name: 'Working Space',
-    nameTh: 'Working Space',
+    name: 'Counter Bar',
+    nameTh: 'Counter Bar',
     description: 'เคาน์เตอร์ทำงานริมหน้าต่าง พร้อมคอมพิวเตอร์ บรรยากาศโปร่ง เหมาะกับงานเร็ว ๆ',
     seatCount: 10,
     range: [1, 10],
@@ -21,9 +21,9 @@ export const AREAS = [
   },
   {
     id: 'pods',
-    name: 'Focus Pods',
-    nameTh: 'โซนโต๊ะมีที่กั้น',
-    description: 'โต๊ะทำงานมีที่กั้นเป็นส่วนตัว 2 แถว เหมาะกับงานที่ต้องโฟกัสสูง',
+    name: 'Computer Table',
+    nameTh: 'Computer Table',
+    description: 'โต๊ะคอมพิวเตอร์มีที่กั้นเป็นส่วนตัว 2 แถว เหมาะกับงานที่ต้องโฟกัสสูง',
     seatCount: 10,
     range: [11, 20],
     emoji: '🧑‍💻',
@@ -32,8 +32,8 @@ export const AREAS = [
   },
   {
     id: 'meeting',
-    name: 'Meeting Rooms',
-    nameTh: 'โซนห้องประชุม',
+    name: 'Meeting Room',
+    nameTh: 'Meeting Room',
     description: 'ห้องประชุมส่วนตัวขนาดใหญ่ 3 ห้อง เหมาะกับการประชุมกลุ่ม',
     seatCount: 3,
     range: [21, 23],
@@ -88,7 +88,7 @@ export const getSeat = (seatId) => SEATS.find((s) => s.id === seatId)
 // ป้ายชื่อที่นั่ง เช่น "ที่นั่ง 05" / ห้องประชุมใช้คำว่า "ห้อง"
 export const seatLabel = (seatId) => {
   const seat = getSeat(seatId)
-  const prefix = seat?.kind === 'room' ? 'ห้อง' : 'ที่นั่ง'
+  const prefix = seat?.kind === 'room' ? 'Meeting Room' : 'ที่นั่ง'
   return `${prefix} ${String(seatId).padStart(2, '0')}`
 }
 
