@@ -113,8 +113,13 @@ export function StoreProvider({ children }) {
   }, [loadProfile])
 
   // 2) โหลด tables (สร้าง map) + สถานะที่นั่งเริ่มต้น + subscribe realtime
+  //    ต้องทำ "หลังล็อกอิน" เพราะ RLS ให้อ่านเฉพาะผู้ที่ยืนยันตัวตนแล้ว
   useEffect(() => {
     if (!isSupabaseEnabled) return
+    if (!currentUser?.id) {
+      setRemoteBookedSeatIds(new Set())
+      return
+    }
     let channel
 
     const init = async () => {
@@ -171,7 +176,7 @@ export function StoreProvider({ children }) {
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
-  }, [rowToBooking])
+  }, [currentUser?.id, rowToBooking])
 
   // โหลดการจองของฉันเมื่อล็อกอิน (โหมด Supabase)
   useEffect(() => {
