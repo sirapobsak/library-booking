@@ -20,16 +20,24 @@ import { getArea } from '../data.js'
 export default function MyBookings() {
   const navigate = useNavigate()
   const { bookings, cancelBooking, pushToast } = useStore()
-  const [confirmRef, setConfirmRef] = useState(null) // การจองที่กำลังจะยกเลิก
+  const [confirmId, setConfirmId] = useState(null) // id ของการจองที่กำลังจะยกเลิก
+  const [cancelling, setCancelling] = useState(false)
 
   const active = bookings.filter((b) => b.status === 'active')
   const cancelled = bookings.filter((b) => b.status === 'cancelled')
 
-  const doCancel = () => {
-    const b = bookings.find((x) => x.ref === confirmRef)
-    cancelBooking(confirmRef)
-    setConfirmRef(null)
-    pushToast(`ยกเลิกการจอง ${b?.seatLabel} แล้ว`, 'info')
+  const doCancel = async () => {
+    const b = bookings.find((x) => x.id === confirmId)
+    setCancelling(true)
+    try {
+      await cancelBooking(confirmId)
+      pushToast(`ยกเลิกการจอง ${b?.seatLabel} แล้ว`, 'info')
+    } catch (err) {
+      pushToast('ยกเลิกไม่สำเร็จ: ' + err.message, 'error')
+    } finally {
+      setCancelling(false)
+      setConfirmId(null)
+    }
   }
 
   return (
@@ -80,7 +88,7 @@ export default function MyBookings() {
                 const zone = getArea(b.areaId)
                 return (
                   <div
-                    key={b.ref}
+                    key={b.id}
                     className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                   >
                     <div
@@ -104,7 +112,7 @@ export default function MyBookings() {
                       <Detail icon={Hash} label="รหัสอ้างอิง" value={b.ref} mono />
 
                       <button
-                        onClick={() => setConfirmRef(b.ref)}
+                        onClick={() => setConfirmId(b.id)}
                         className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" /> ยกเลิกการจอง
@@ -129,7 +137,7 @@ export default function MyBookings() {
                 const zone = getArea(b.areaId)
                 return (
                   <div
-                    key={b.ref}
+                    key={b.id}
                     className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm"
                   >
                     <div className="flex items-center gap-2 text-slate-400">
@@ -148,10 +156,10 @@ export default function MyBookings() {
       </main>
 
       {/* ---------- Modal ยืนยันการยกเลิก ---------- */}
-      {confirmRef && (
+      {confirmId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
-          onClick={() => setConfirmRef(null)}
+          onClick={() => !cancelling && setConfirmId(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -166,16 +174,18 @@ export default function MyBookings() {
             </p>
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setConfirmRef(null)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                onClick={() => setConfirmId(null)}
+                disabled={cancelling}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
               >
                 <X className="h-4 w-4" /> ไม่ยกเลิก
               </button>
               <button
                 onClick={doCancel}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600"
+                disabled={cancelling}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Trash2 className="h-4 w-4" /> ยืนยันยกเลิก
+                {cancelling ? 'กำลังยกเลิก...' : (<><Trash2 className="h-4 w-4" /> ยืนยันยกเลิก</>)}
               </button>
             </div>
           </div>

@@ -47,22 +47,33 @@ export default function ZonePage() {
     setTimeError('')
   }
 
-  const confirmBooking = () => {
+  const [saving, setSaving] = useState(false)
+
+  const confirmBooking = async () => {
     // ตรวจสอบเวลา: ต้องกรอกครบ และเวลาสิ้นสุดต้องหลังเวลาเริ่ม
     if (!date) return setTimeError('กรุณาเลือกวันที่')
     if (!startTime || !endTime) return setTimeError('กรุณากรอกเวลาเริ่มและเวลาสิ้นสุด')
     if (endTime <= startTime) return setTimeError('เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม')
 
-    const booking = createBooking({
-      areaId: getSeat(selected.id).area,
-      seatId: selected.id,
-      date,
-      startTime,
-      endTime,
-    })
-    setSelected(null)
-    setReceipt(booking)
-    pushToast(`จอง ${booking.seatLabel} สำเร็จแล้ว!`, 'success')
+    setSaving(true)
+    try {
+      const booking = await createBooking({
+        areaId: getSeat(selected.id).area,
+        seatId: selected.id,
+        date,
+        startTime,
+        endTime,
+      })
+      setSelected(null)
+      setReceipt(booking)
+      pushToast(`จอง ${booking.seatLabel} สำเร็จแล้ว!`, 'success')
+    } catch (err) {
+      // เช่น จองซ้ำ / เกินโควตา — แสดงข้อความ ไม่ปิด modal
+      setTimeError(err.message)
+      pushToast(err.message, 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const copyRef = (ref) => {
@@ -234,9 +245,16 @@ export default function ZonePage() {
 
               <button
                 onClick={confirmBooking}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sage-500 to-sage-700 py-3 text-sm font-semibold text-white shadow-lg shadow-sage-500/30 transition hover:from-sage-600 hover:to-sage-800 active:scale-[0.99]"
+                disabled={saving}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sage-500 to-sage-700 py-3 text-sm font-semibold text-white shadow-lg shadow-sage-500/30 transition hover:from-sage-600 hover:to-sage-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <CheckCircle2 className="h-4 w-4" /> ยืนยันการจอง
+                {saving ? (
+                  'กำลังบันทึก...'
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" /> ยืนยันการจอง
+                  </>
+                )}
               </button>
             </div>
           </div>

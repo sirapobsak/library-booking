@@ -144,6 +144,21 @@ create trigger trg_enforce_booking_update
   before update on public.bookings
   for each row execute function public.enforce_booking_update();
 
+-- 3.3 RPC: หา email จากเบอร์โทร (ให้ล็อกอินด้วย "เบอร์โทร + รหัสผ่าน" ได้)
+--     Supabase Auth ล็อกอินด้วย email — ฟังก์ชันนี้ช่วยแปลงเบอร์ -> email ก่อน sign in
+--     security definer + คืนค่าทีละ 1 แถว (จำกัดการ query ให้ปลอดภัย)
+create or replace function public.get_email_by_phone(p_phone text)
+returns text
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select email from public.profiles where phone_number = p_phone limit 1;
+$$;
+
+grant execute on function public.get_email_by_phone(text) to anon, authenticated;
+
 -- ------------------------------------------------------------
 -- 4) Row Level Security (RLS)
 -- ------------------------------------------------------------

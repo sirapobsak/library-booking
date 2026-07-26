@@ -8,8 +8,17 @@ import MyBookings from './pages/MyBookings.jsx'
 
 // กันไม่ให้เข้าหน้าที่ต้องล็อกอินก่อน ถ้ายังไม่ล็อกอินให้เด้งไป /login
 function Protected({ children }) {
-  const { currentUser } = useStore()
+  const { currentUser, authReady } = useStore()
   const location = useLocation()
+
+  // โหมด Supabase: รอกู้คืน session ให้เสร็จก่อน (กันหน้าเด้งไป login ตอนรีเฟรช)
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-slate-400">
+        กำลังโหลด...
+      </div>
+    )
+  }
   if (!currentUser) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }

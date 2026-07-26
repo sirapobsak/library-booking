@@ -40,7 +40,7 @@ function Field({ icon: Icon, error, rightSlot, ...props }) {
 export default function AuthPage({ mode }) {
   const isLogin = mode === 'login'
   const navigate = useNavigate()
-  const { login, register, pushToast } = useStore()
+  const { login, register, pushToast, cloud } = useStore()
 
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
@@ -88,13 +88,18 @@ export default function AuthPage({ mode }) {
     return e
   }
 
-  const handleSubmit = (ev) => {
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleSubmit = async (ev) => {
     ev.preventDefault()
+    if (submitting) return
 
     if (isLogin) {
       const e = validateLogin()
       if (Object.keys(e).length) return setErrors(e)
-      const res = login(form.identifier.trim(), form.password)
+      setSubmitting(true)
+      const res = await login(form.identifier.trim(), form.password)
+      setSubmitting(false)
       if (!res.ok) {
         setErrors({ password: res.error })
         pushToast(res.error, 'error')
@@ -105,13 +110,15 @@ export default function AuthPage({ mode }) {
     } else {
       const e = validateRegister()
       if (Object.keys(e).length) return setErrors(e)
-      const res = register({
+      setSubmitting(true)
+      const res = await register({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
         password: form.password,
       })
+      setSubmitting(false)
       if (!res.ok) {
         setErrors({ email: res.error })
         pushToast(res.error, 'error')
@@ -296,9 +303,12 @@ export default function AuthPage({ mode }) {
 
               <button
                 type="submit"
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-slateblue-500 to-slateblue-700 py-3 text-sm font-semibold text-white shadow-lg shadow-slateblue-500/30 transition hover:from-slateblue-600 hover:to-slateblue-800 active:scale-[0.99]"
+                disabled={submitting}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-slateblue-500 to-slateblue-700 py-3 text-sm font-semibold text-white shadow-lg shadow-slateblue-500/30 transition hover:from-slateblue-600 hover:to-slateblue-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLogin ? (
+                {submitting ? (
+                  'กำลังดำเนินการ...'
+                ) : isLogin ? (
                   <>
                     <LogIn className="h-4 w-4" /> เข้าสู่ระบบ
                   </>
@@ -310,8 +320,8 @@ export default function AuthPage({ mode }) {
               </button>
             </form>
 
-            {/* กล่องบัญชีตัวอย่าง เฉพาะหน้า login */}
-            {isLogin && (
+            {/* กล่องบัญชีตัวอย่าง เฉพาะหน้า login และเฉพาะโหมด mock */}
+            {isLogin && !cloud && (
               <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-sage-200 bg-sage-50 p-3.5">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sage-600" />
                 <div className="text-xs leading-relaxed text-sage-800">
