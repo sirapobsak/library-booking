@@ -60,7 +60,7 @@ export default function Dashboard() {
               >
                 <span className="text-5xl drop-shadow-sm">{zone.emoji}</span>
                 <span className="absolute right-3 top-3 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                  {zone.seatCount} ที่นั่ง
+                  {zone.seatCount} {zone.id === 'meeting' ? 'ห้อง' : 'ที่นั่ง'}
                 </span>
               </div>
 
@@ -75,7 +75,7 @@ export default function Dashboard() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-xl bg-sage-50 px-3 py-2">
                     <p className="text-lg font-bold text-sage-700">{zone.available}</p>
-                    <p className="text-xs text-sage-600">ที่นั่งว่าง</p>
+                    <p className="text-xs text-sage-600">{zone.id === 'meeting' ? 'ห้องว่าง' : 'ที่นั่งว่าง'}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 px-3 py-2">
                     <p className="flex items-center gap-1 text-lg font-bold text-slate-600">

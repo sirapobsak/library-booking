@@ -337,9 +337,9 @@ export function StoreProvider({ children }) {
 // ---------- helpers ----------
 // หาโซนจาก seatId (ตามช่วงเลขที่ frontend ใช้)
 function seatAreaOf(seatId) {
-  if (seatId >= 1 && seatId <= 8) return 'bar'
-  if (seatId >= 9 && seatId <= 20) return 'pods'
-  return 'flex'
+  if (seatId >= 1 && seatId <= 10) return 'bar'
+  if (seatId >= 11 && seatId <= 20) return 'pods'
+  return 'meeting'
 }
 
 function translateAuthError(error) {

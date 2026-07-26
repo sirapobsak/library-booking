@@ -238,29 +238,29 @@ exception
 end $$;
 
 -- ------------------------------------------------------------
--- 6) Seed data (โซน + ที่นั่ง 1–30 ให้ตรงกับ frontend)
---    Working Space 1–8, Focus Pods 9–20, Flex Desks 21–30
+-- 6) Seed data (โซน + ที่นั่ง 1–23 ให้ตรงกับ frontend)
+--    Working Space 1–10, Focus Pods 11–20, Meeting Rooms 21–23
 -- ------------------------------------------------------------
 insert into public.zones (name, description, type) values
   ('Working Space', 'เคาน์เตอร์ทำงานริมหน้าต่าง พร้อมคอมพิวเตอร์', 'coworking'),
-  ('Focus Pods',    'ห้องส่วนตัวมีผนังกั้น เหมาะกับงานที่ต้องโฟกัส', 'reading'),
-  ('Flex Desks',    'โต๊ะเดี่ยวยืดหยุ่น เหมาะกับการอ่านหนังสือ',     'reading')
+  ('Focus Pods',    'โต๊ะทำงานมีที่กั้นเป็นส่วนตัว 2 แถว',         'reading'),
+  ('Meeting Rooms', 'ห้องประชุมส่วนตัวขนาดใหญ่ 3 ห้อง',           'meeting')
 on conflict (name) do nothing;
 
 -- สร้างที่นั่งตามหมายเลข global (ตรงกับ seat.id ใน frontend)
 insert into public.tables (zone_id, table_number, capacity)
 select (select id from public.zones where name = 'Working Space'), g, 1
-from generate_series(1, 8) as g
+from generate_series(1, 10) as g
 on conflict (zone_id, table_number) do nothing;
 
 insert into public.tables (zone_id, table_number, capacity)
 select (select id from public.zones where name = 'Focus Pods'), g, 1
-from generate_series(9, 20) as g
+from generate_series(11, 20) as g
 on conflict (zone_id, table_number) do nothing;
 
 insert into public.tables (zone_id, table_number, capacity)
-select (select id from public.zones where name = 'Flex Desks'), g, 1
-from generate_series(21, 30) as g
+select (select id from public.zones where name = 'Meeting Rooms'), g, 8
+from generate_series(21, 23) as g
 on conflict (zone_id, table_number) do nothing;
 
 -- ============================================================
