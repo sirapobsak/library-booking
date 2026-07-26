@@ -23,7 +23,7 @@ const refFromId = (id) => 'LIB-' + String(id).replace(/-/g, '').slice(0, 6).toUp
 
 // ผู้ใช้ตัวอย่างสำหรับโหมด mock เท่านั้น
 const DEMO_USERS = [
-  { firstName: 'สมชาย', lastName: 'ใจดี', phone: '0812345678', email: 'demo@library.ac.th', password: '123456' },
+  { firstName: 'สมชาย', lastName: 'ใจดี', phone: '0812345678', email: 'demo@library.ac.th', password: '123456', points: 100 },
 ]
 
 export function StoreProvider({ children }) {
@@ -33,6 +33,7 @@ export function StoreProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const [remoteBookedSeatIds, setRemoteBookedSeatIds] = useState(new Set()) // ที่นั่งที่ถูกจอง (โหมด Supabase)
   const [authReady, setAuthReady] = useState(!isSupabaseEnabled)
+  const [pointLogs, setPointLogs] = useState([]) // ประวัติการเปลี่ยนคะแนน
 
   // maps สำหรับแปลง seatId <-> table_id (โหมด Supabase)
   const seatToTable = useRef(new Map())
@@ -86,7 +87,25 @@ export function StoreProvider({ children }) {
       lastName: data?.last_name ?? '',
       phone: data?.phone_number ?? '',
       email: data?.email ?? authUser.email,
+      points: data?.points ?? 100, // คะแนนความประพฤติ (ยังไม่รัน migration = default 100)
     })
+  }, [])
+
+  // โหลดประวัติคะแนนของผู้ใช้ (โหมด Supabase)
+  const refreshPoints = useCallback(async (userId) => {
+    // ดึงคะแนนล่าสุด
+    const { data: prof } = await supabase.from('profiles').select('points').eq('id', userId).single()
+    if (prof?.points != null) {
+      setCurrentUser((u) => (u ? { ...u, points: prof.points } : u))
+    }
+    // ดึงประวัติ (ถ้ายังไม่รัน migration ตารางจะไม่มี -> เงียบ ๆ)
+    const { data: logs } = await supabase
+      .from('point_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setPointLogs(logs || [])
   }, [])
 
   const refreshMyBookings = useCallback(async (userId) => {
@@ -178,12 +197,17 @@ export function StoreProvider({ children }) {
     }
   }, [currentUser?.id, rowToBooking])
 
-  // โหลดการจองของฉันเมื่อล็อกอิน (โหมด Supabase)
+  // โหลดการจอง + ประวัติคะแนน เมื่อล็อกอิน (โหมด Supabase)
   useEffect(() => {
     if (!isSupabaseEnabled) return
-    if (currentUser?.id) refreshMyBookings(currentUser.id)
-    else setBookings([])
-  }, [currentUser?.id, refreshMyBookings])
+    if (currentUser?.id) {
+      refreshMyBookings(currentUser.id)
+      refreshPoints(currentUser.id)
+    } else {
+      setBookings([])
+      setPointLogs([])
+    }
+  }, [currentUser?.id, refreshMyBookings, refreshPoints])
 
   // ==========================================================
   //  Authentication (รองรับทั้ง mock และ Supabase)
@@ -208,7 +232,7 @@ export function StoreProvider({ children }) {
       // ----- mock -----
       const exists = users.some((u) => u.email === data.email || u.phone === data.phone)
       if (exists) return { ok: false, error: 'อีเมลหรือเบอร์โทรนี้ถูกใช้แล้ว' }
-      setUsers((prev) => [...prev, { ...data }])
+      setUsers((prev) => [...prev, { ...data, points: 100 }])
       return { ok: true }
     },
     [users]
@@ -303,6 +327,41 @@ export function StoreProvider({ children }) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)))
   }, [])
 
+  // ==========================================================
+  //  ระบบคะแนนความประพฤติ — ปรับ +/- คะแนน (จุดเชื่อมต่อสำหรับเซนเซอร์เสียง)
+  // ==========================================================
+  const adjustPoints = useCallback(
+    async (delta, reason = null) => {
+      if (!currentUserRef.current) throw new Error('ยังไม่ได้เข้าสู่ระบบ')
+
+      if (isSupabaseEnabled) {
+        const uid = currentUserRef.current.id
+        const { data, error } = await supabase.rpc('adjust_points', {
+          p_user_id: uid,
+          p_delta: delta,
+          p_reason: reason,
+        })
+        if (error) throw new Error('ปรับคะแนนไม่สำเร็จ (รัน points-system.sql แล้วหรือยัง?)')
+        setCurrentUser((u) => (u ? { ...u, points: data } : u))
+        await refreshPoints(uid)
+        return data
+      }
+
+      // ----- mock (ไม่ต้องมี id จริง) -----
+      let newPoints = 100
+      setCurrentUser((u) => {
+        newPoints = Math.max(0, (u?.points ?? 100) + delta)
+        return u ? { ...u, points: newPoints } : u
+      })
+      setPointLogs((prev) => [
+        { id: Date.now(), user_id: 'mock', delta, reason, created_at: new Date().toISOString() },
+        ...prev,
+      ])
+      return newPoints
+    },
+    [refreshPoints]
+  )
+
   // ที่นั่งที่ถูกจอง: โหมด mock คำนวณจาก bookings, โหมด Supabase ใช้ remoteBookedSeatIds
   const bookedForMock = useMemo(
     () => new Set(bookings.filter((b) => b.status === 'active').map((b) => b.seatId)),
@@ -327,6 +386,8 @@ export function StoreProvider({ children }) {
     login,
     logout,
     isSeatBooked: isSeatBookedFinal,
+    pointLogs,
+    adjustPoints,
     createBooking,
     cancelBooking,
   }

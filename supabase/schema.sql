@@ -26,12 +26,14 @@ exception when duplicate_object then null; end $$;
 -- ------------------------------------------------------------
 
 -- 2.1 profiles : ข้อมูลผู้ใช้ ผูกกับ auth.users ของ Supabase
+--     points = คะแนนความประพฤติ (ระบบเต็มอยู่ใน points-system.sql)
 create table if not exists public.profiles (
   id           uuid primary key references auth.users (id) on delete cascade,
   first_name   text not null default '',
   last_name    text not null default '',
   phone_number text not null default '',
   email        text,
+  points       int not null default 100,
   created_at   timestamptz not null default now()
 );
 

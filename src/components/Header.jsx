@@ -1,11 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { BookMarked, LogOut, CalendarCheck, User } from 'lucide-react'
+import { BookMarked, LogOut, CalendarCheck, User, Star } from 'lucide-react'
 import { useStore } from '../store.jsx'
+
+// สีของคะแนนตามระดับ
+const pointColor = (p) =>
+  p >= 90 ? 'text-emerald-600 bg-emerald-50' : p >= 60 ? 'text-amber-600 bg-amber-50' : 'text-red-600 bg-red-50'
 
 // แถบเมนูด้านบน แสดงข้อมูลผู้ใช้ + ปุ่มออกจากระบบ
 export default function Header() {
   const { currentUser, logout, activeBookings } = useStore()
   const navigate = useNavigate()
+  const points = currentUser?.points ?? 100
 
   const handleLogout = () => {
     logout()
@@ -28,6 +33,17 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* คะแนนความประพฤติ */}
+          <Link
+            to="/points"
+            title="คะแนนความประพฤติ"
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-bold transition hover:brightness-95 ${pointColor(points)}`}
+          >
+            <Star className="h-4 w-4" />
+            {points}
+            <span className="hidden text-xs font-medium sm:inline">คะแนน</span>
+          </Link>
+
           <Link
             to="/my-bookings"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"

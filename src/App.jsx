@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import ZonePage from './pages/ZonePage.jsx'
 import MyBookings from './pages/MyBookings.jsx'
+import MyPoints from './pages/MyPoints.jsx'
 
 // กันไม่ให้เข้าหน้าที่ต้องล็อกอินก่อน ถ้ายังไม่ล็อกอินให้เด้งไป /login
 function Protected({ children }) {
@@ -52,6 +53,14 @@ export default function App() {
           element={
             <Protected>
               <MyBookings />
+            </Protected>
+          }
+        />
+        <Route
+          path="/points"
+          element={
+            <Protected>
+              <MyPoints />
             </Protected>
           }
         />
