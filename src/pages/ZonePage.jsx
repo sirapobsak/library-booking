@@ -15,7 +15,7 @@ import {
 import Header from '../components/Header.jsx'
 import RoomFloorPlan from '../components/RoomFloorPlan.jsx'
 import { useStore } from '../store.jsx'
-import { getArea, getSeat, seatLabel, QUICK_TIMES } from '../data.js'
+import { getArea, getZone, getSeat, seatLabel, QUICK_TIMES } from '../data.js'
 
 // วันที่วันนี้ (เวลาท้องถิ่น)
 const localToday = () => {
@@ -29,15 +29,21 @@ export default function ZonePage() {
   const navigate = useNavigate()
   const { currentUser, isSeatBooked, createBooking, pushToast } = useStore()
 
-  const area = getArea(zoneId)
+  const zone = getZone(zoneId)
   const [selected, setSelected] = useState(null) // ที่นั่งที่กำลังเลือก
   const [date, setDate] = useState(localToday())
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('12:00')
   const [timeError, setTimeError] = useState('')
   const [receipt, setReceipt] = useState(null)
+  const [saving, setSaving] = useState(false)
 
-  if (!area) return <Navigate to="/dashboard" replace />
+  if (!zone) return <Navigate to="/dashboard" replace />
+
+  // โซนที่ยังไม่เปิดให้บริการ — แสดงหน้า "เร็ว ๆ นี้"
+  if (zone.status !== 'active') {
+    return <ComingSoon zone={zone} onBack={() => navigate('/dashboard')} />
+  }
 
   const openBooking = (seat) => {
     setSelected(seat)
@@ -46,8 +52,6 @@ export default function ZonePage() {
     setEndTime('12:00')
     setTimeError('')
   }
-
-  const [saving, setSaving] = useState(false)
 
   const confirmBooking = async () => {
     // ตรวจสอบเวลา: ต้องกรอกครบ และเวลาสิ้นสุดต้องหลังเวลาเริ่ม
@@ -99,14 +103,14 @@ export default function ZonePage() {
         <div className="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-center gap-4">
             <span
-              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${area.gradient} text-3xl`}
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${zone.gradient} text-3xl`}
             >
-              {area.emoji}
+              {zone.emoji}
             </span>
             <div>
-              <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">{area.nameTh}</h1>
+              <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">{zone.nameTh}</h1>
               <p className="text-sm text-slate-500">
-                {area.name} · {area.seatCount} ที่นั่ง
+                {zone.seatCount} ที่นั่ง · รองรับได้ {zone.capacity} คน
               </p>
             </div>
           </div>
@@ -123,13 +127,12 @@ export default function ZonePage() {
           <div className="mb-4 flex items-center gap-2 rounded-xl bg-slateblue-50 px-4 py-2.5 text-sm text-slateblue-700">
             <MapPin className="h-4 w-4 shrink-0" />
             <span>
-              นี่คือผังห้องจริงแบบมุมสูง — โซน <b>{area.nameTh}</b> ถูกไฮไลต์ไว้
-              คลิกที่นั่งสีเขียวเพื่อจอง (คลิกที่นั่งโซนอื่นก็จองได้)
+              นี่คือผังห้อง <b>Working Space</b> แบบมุมสูง — คลิกที่นั่ง/ห้องสีเขียวเพื่อจองได้เลย
             </span>
           </div>
 
           <RoomFloorPlan
-            activeArea={zoneId}
+            activeArea={null}
             selectedId={selected?.id}
             isSeatBooked={isSeatBooked}
             onSelect={openBooking}
@@ -348,6 +351,46 @@ function Overlay({ children, onClose }) {
       onClick={onClose}
     >
       <div onClick={(e) => e.stopPropagation()}>{children}</div>
+    </div>
+  )
+}
+
+// หน้าโซนที่ยังไม่เปิดให้บริการ (เตรียมไว้สำหรับต่อยอด)
+function ComingSoon({ zone, onBack }) {
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <button
+          onClick={onBack}
+          className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slateblue-600"
+        >
+          <ArrowLeft className="h-4 w-4" /> กลับไปหน้าเลือกโซน
+        </button>
+
+        <div className="flex flex-col items-center rounded-3xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+          <span
+            className={`flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br ${zone.gradient} text-4xl shadow-lg`}
+          >
+            {zone.emoji}
+          </span>
+          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+            <Clock className="h-3.5 w-3.5" /> เร็ว ๆ นี้
+          </span>
+          <h1 className="mt-3 text-2xl font-bold text-slate-800">{zone.nameTh}</h1>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">{zone.description}</p>
+          <p className="mt-4 max-w-md text-sm text-slate-400">
+            โซนนี้กำลังเตรียมเปิดให้บริการ ระบบพร้อมรองรับแล้ว
+            เหลือเพียงเพิ่มผังที่นั่งของโซนนี้เข้าไป
+          </p>
+          <button
+            onClick={onBack}
+            className="mt-6 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-900"
+          >
+            เลือกโซนอื่น
+          </button>
+        </div>
+      </main>
     </div>
   )
 }

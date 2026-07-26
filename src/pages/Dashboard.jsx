@@ -1,23 +1,16 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Users, LayoutGrid, CalendarCheck, Armchair } from 'lucide-react'
+import { ArrowRight, Users, LayoutGrid, CalendarCheck, Armchair, Clock } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import { useStore } from '../store.jsx'
-import { AREAS, seatsOfArea } from '../data.js'
+import { ZONES, SEATS } from '../data.js'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { currentUser, activeBookings, isSeatBooked } = useStore()
 
-  // นับที่นั่งว่างของแต่ละโซนแบบเรียลไทม์
-  const zoneStats = AREAS.map((zone) => {
-    const occupied = seatsOfArea(zone.id).filter((s) => isSeatBooked(s.id)).length
-    return { ...zone, occupied, available: zone.seatCount - occupied }
-  })
-
-  // ยอดรวมทั้งห้อง
-  const totalAvailable = zoneStats.reduce((sum, z) => sum + z.available, 0) // ที่นั่ง+ห้องที่ยังว่าง
-  const totalUnits = AREAS.reduce((sum, z) => sum + z.seatCount, 0) // จำนวนที่นั่ง+ห้องทั้งหมด (23)
-  const totalCapacity = AREAS.reduce((sum, z) => sum + (z.capacity ?? z.seatCount), 0) // ความจุรวม (44 คน)
+  // นับที่นั่งว่างของ Working Space แบบเรียลไทม์ (ที่นั่งทั้งหมดอยู่ในโซนนี้)
+  const wsBooked = SEATS.filter((s) => isSeatBooked(s.id)).length
+  const wsAvailable = SEATS.length - wsBooked
 
   return (
     <div className="min-h-screen">
@@ -52,80 +45,77 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* แถบสรุปยอดรวมทั้งห้อง */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-sage-50 p-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-500 text-white">
-              <Armchair className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold leading-none text-sage-700">
-                {totalAvailable}
-                <span className="ml-1 text-sm font-medium text-sage-500">/ {totalUnits}</span>
-              </p>
-              <p className="mt-1 text-xs text-sage-600">ที่นั่ง/ห้องที่ว่างตอนนี้</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-slateblue-100 bg-slateblue-50 p-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slateblue-500 text-white">
-              <Users className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold leading-none text-slateblue-700">{totalCapacity}</p>
-              <p className="mt-1 text-xs text-slateblue-600">ความจุทั้งหมด (รองรับได้ กี่คน)</p>
-            </div>
-          </div>
-        </div>
-
-        {/* การ์ดโซน */}
+        {/* การ์ดโซนใหญ่ */}
         <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {zoneStats.map((zone) => (
-            <div
-              key={zone.id}
-              className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5"
-            >
-              {/* หัวการ์ดแบบ gradient */}
+          {ZONES.map((zone) => {
+            const isActive = zone.status === 'active'
+            const available = isActive ? wsAvailable : null
+
+            return (
               <div
-                className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${zone.gradient}`}
+                key={zone.id}
+                className={`group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition ${
+                  isActive ? 'hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5' : 'opacity-90'
+                }`}
               >
-                <span className="text-5xl drop-shadow-sm">{zone.emoji}</span>
-                <span className="absolute right-3 top-3 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                  {zone.seatCount} {zone.id === 'meeting' ? 'ห้อง' : 'ที่นั่ง'}
-                </span>
-              </div>
-
-              <div className="flex flex-1 flex-col p-5">
-                <h3 className="text-lg font-bold text-slate-800">{zone.nameTh}</h3>
-                <p className="text-xs font-medium text-slate-400">{zone.name}</p>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">
-                  {zone.description}
-                </p>
-
-                {/* สถิติ */}
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-sage-50 px-3 py-2">
-                    <p className="text-lg font-bold text-sage-700">{zone.available}</p>
-                    <p className="text-xs text-sage-600">{zone.id === 'meeting' ? 'ห้องว่าง' : 'ที่นั่งว่าง'}</p>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 px-3 py-2">
-                    <p className="flex items-center gap-1 text-lg font-bold text-slate-600">
-                      <Users className="h-4 w-4" /> {zone.seatCount}
-                    </p>
-                    <p className="text-xs text-slate-400">ทั้งหมด</p>
-                  </div>
+                {/* หัวการ์ดแบบ gradient */}
+                <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${zone.gradient}`}>
+                  <span className={`text-5xl drop-shadow-sm ${!isActive ? 'opacity-70 grayscale-[.3]' : ''}`}>
+                    {zone.emoji}
+                  </span>
+                  <span className="absolute right-3 top-3 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                    {isActive ? `${zone.seatCount} ที่นั่ง` : 'เร็ว ๆ นี้'}
+                  </span>
                 </div>
 
-                <button
-                  onClick={() => navigate(`/zone/${zone.id}`)}
-                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-900 group-hover:gap-3"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  เลือกโซนนี้
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </button>
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="text-lg font-bold text-slate-800">{zone.nameTh}</h3>
+                  <p className="text-xs font-medium text-slate-400">{zone.name}</p>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">
+                    {zone.description}
+                  </p>
+
+                  {isActive ? (
+                    <>
+                      {/* สถิติ Working Space */}
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-sage-50 px-3 py-2">
+                          <p className="text-lg font-bold text-sage-700">
+                            {available}
+                            <span className="ml-1 text-xs font-medium text-sage-500">/ {zone.seatCount}</span>
+                          </p>
+                          <p className="text-xs text-sage-600">ที่นั่ง/ห้องว่าง</p>
+                        </div>
+                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                          <p className="flex items-center gap-1 text-lg font-bold text-slate-600">
+                            <Users className="h-4 w-4" /> {zone.capacity}
+                          </p>
+                          <p className="text-xs text-slate-400">รองรับได้ (คน)</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/zone/${zone.id}`)}
+                        className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-900 group-hover:gap-3"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                        เลือกโซนนี้
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      disabled
+                      className="mt-4 flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-400"
+                    >
+                      <Clock className="h-4 w-4" />
+                      เปิดให้บริการเร็ว ๆ นี้
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </main>
     </div>

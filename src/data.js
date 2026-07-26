@@ -1,12 +1,49 @@
 // ------------------------------------------------------------
-// ข้อมูลห้องทำงาน — โครงสร้างอิงจากผังห้องจริง (ภาพมุมสูง)
-// รวมทั้งหมด 23 ที่นั่ง (เลข 1–23)
-//   • Working Space (เคาน์เตอร์บาร์)        ที่นั่ง 1–10
-//   • Focus Pods (โต๊ะมีที่กั้น)            ที่นั่ง 11–20 (2 แถว × 5)
-//   • Meeting Rooms (ห้องประชุม)           ห้อง 21–23
-// พิกัด x,y เป็นเปอร์เซ็นต์บนผังห้อง (อิงตำแหน่งจากรูป)
+// โครงสร้าง 2 ระดับ:
+//   ZONES  = โซนใหญ่ของห้องสมุด (Dashboard เลือกจากตรงนี้)
+//            • Working Space  ← ทำเสร็จแล้ว (มีผังห้องข้างล่าง)
+//            • Reading Zone   ← เร็ว ๆ นี้
+//            • Meeting Zone   ← เร็ว ๆ นี้
+//   AREAS  = พื้นที่ย่อย"ภายใน" Working Space (Counter Bar / Computer Table / Meeting Room)
+//   SEATS  = ที่นั่ง 1–23 ในผัง Working Space
 // ------------------------------------------------------------
 
+// ---------- โซนใหญ่ (top-level) ----------
+export const ZONES = [
+  {
+    id: 'working-space',
+    name: 'Working Space',
+    nameTh: 'Working Space',
+    description: 'พื้นที่ทำงานหลัก มี Counter Bar, Computer Table และ Meeting Room รวมอยู่ในห้องเดียว',
+    status: 'active',
+    emoji: '🏢',
+    gradient: 'from-slateblue-500 to-slateblue-700',
+    seatCount: 23, // 10 + 10 + 3
+    capacity: 44, // โต๊ะ 20 คน + ห้องประชุม 3 ห้อง × 8 = 24 คน
+  },
+  {
+    id: 'reading',
+    name: 'Reading Zone',
+    nameTh: 'โซนอ่านหนังสือ',
+    description: 'พื้นที่เงียบสงบสำหรับอ่านหนังสือและงานที่ต้องใช้สมาธิสูง',
+    status: 'coming-soon',
+    emoji: '📚',
+    gradient: 'from-sage-500 to-sage-700',
+  },
+  {
+    id: 'meeting-zone',
+    name: 'Meeting Zone',
+    nameTh: 'โซนประชุม',
+    description: 'ห้องประชุมขนาดใหญ่สำหรับกลุ่ม พร้อมอุปกรณ์นำเสนอ',
+    status: 'coming-soon',
+    emoji: '👥',
+    gradient: 'from-amber-500 to-orange-600',
+  },
+]
+
+export const getZone = (zoneId) => ZONES.find((z) => z.id === zoneId)
+
+// ---------- พื้นที่ย่อยภายใน Working Space ----------
 export const AREAS = [
   {
     id: 'bar',
