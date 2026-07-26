@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Users, LayoutGrid, CalendarCheck } from 'lucide-react'
+import { ArrowRight, Users, LayoutGrid, CalendarCheck, Armchair } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import { useStore } from '../store.jsx'
 import { AREAS, seatsOfArea } from '../data.js'
@@ -13,6 +13,11 @@ export default function Dashboard() {
     const occupied = seatsOfArea(zone.id).filter((s) => isSeatBooked(s.id)).length
     return { ...zone, occupied, available: zone.seatCount - occupied }
   })
+
+  // ยอดรวมทั้งห้อง
+  const totalAvailable = zoneStats.reduce((sum, z) => sum + z.available, 0) // ที่นั่ง+ห้องที่ยังว่าง
+  const totalUnits = AREAS.reduce((sum, z) => sum + z.seatCount, 0) // จำนวนที่นั่ง+ห้องทั้งหมด (23)
+  const totalCapacity = AREAS.reduce((sum, z) => sum + (z.capacity ?? z.seatCount), 0) // ความจุรวม (44 คน)
 
   return (
     <div className="min-h-screen">
@@ -45,6 +50,31 @@ export default function Dashboard() {
               </span>
             )}
           </button>
+        </div>
+
+        {/* แถบสรุปยอดรวมทั้งห้อง */}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-sage-100 bg-sage-50 p-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sage-500 text-white">
+              <Armchair className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-2xl font-bold leading-none text-sage-700">
+                {totalAvailable}
+                <span className="ml-1 text-sm font-medium text-sage-500">/ {totalUnits}</span>
+              </p>
+              <p className="mt-1 text-xs text-sage-600">ที่นั่ง/ห้องที่ว่างตอนนี้</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-slateblue-100 bg-slateblue-50 p-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slateblue-500 text-white">
+              <Users className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-2xl font-bold leading-none text-slateblue-700">{totalCapacity}</p>
+              <p className="mt-1 text-xs text-slateblue-600">ความจุทั้งหมด (รองรับได้ กี่คน)</p>
+            </div>
+          </div>
         </div>
 
         {/* การ์ดโซน */}

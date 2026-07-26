@@ -14,6 +14,7 @@ export const AREAS = [
     nameTh: 'Counter Bar',
     description: 'เคาน์เตอร์ทำงานริมหน้าต่าง พร้อมคอมพิวเตอร์ บรรยากาศโปร่ง เหมาะกับงานเร็ว ๆ',
     seatCount: 10,
+    capacity: 10, // ความจุ (คน)
     range: [1, 10],
     emoji: '🖥️',
     gradient: 'from-slateblue-500 to-slateblue-700',
@@ -25,6 +26,7 @@ export const AREAS = [
     nameTh: 'Computer Table',
     description: 'โต๊ะคอมพิวเตอร์มีที่กั้นเป็นส่วนตัว 2 แถว เหมาะกับงานที่ต้องโฟกัสสูง',
     seatCount: 10,
+    capacity: 10, // ความจุ (คน)
     range: [11, 20],
     emoji: '🧑‍💻',
     gradient: 'from-sage-500 to-sage-700',
@@ -36,6 +38,7 @@ export const AREAS = [
     nameTh: 'Meeting Room',
     description: 'ห้องประชุมส่วนตัวขนาดใหญ่ 3 ห้อง เหมาะกับการประชุมกลุ่ม',
     seatCount: 3,
+    capacity: 24, // 3 ห้อง × 8 คน
     range: [21, 23],
     emoji: '🧑‍🤝‍🧑',
     gradient: 'from-amber-500 to-orange-600',
