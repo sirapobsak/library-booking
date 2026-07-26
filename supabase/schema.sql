@@ -38,10 +38,15 @@ create table if not exists public.profiles (
 -- 2.2 zones : โซนในห้องสมุด
 create table if not exists public.zones (
   id          bigint generated always as identity primary key,
-  name        text not null,
+  name        text not null unique,   -- unique กันโซนชื่อซ้ำ + ทำให้ seed รันซ้ำได้
   description text,
   type        public.zone_type not null
 );
+
+-- เผื่อกรณีเคยสร้างตารางไว้ก่อนหน้าโดยยังไม่มี unique(name) — เพิ่มให้ (รันซ้ำได้)
+do $$ begin
+  alter table public.zones add constraint zones_name_key unique (name);
+exception when duplicate_object then null; when duplicate_table then null; end $$;
 
 -- 2.3 tables : โต๊ะ/ที่นั่งในแต่ละโซน
 create table if not exists public.tables (
@@ -240,7 +245,7 @@ insert into public.zones (name, description, type) values
   ('Working Space', 'เคาน์เตอร์ทำงานริมหน้าต่าง พร้อมคอมพิวเตอร์', 'coworking'),
   ('Focus Pods',    'ห้องส่วนตัวมีผนังกั้น เหมาะกับงานที่ต้องโฟกัส', 'reading'),
   ('Flex Desks',    'โต๊ะเดี่ยวยืดหยุ่น เหมาะกับการอ่านหนังสือ',     'reading')
-on conflict do nothing;
+on conflict (name) do nothing;
 
 -- สร้างที่นั่งตามหมายเลข global (ตรงกับ seat.id ใน frontend)
 insert into public.tables (zone_id, table_number, capacity)
