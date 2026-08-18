@@ -215,7 +215,7 @@ export function StoreProvider({ children }) {
   const register = useCallback(
     async (data) => {
       if (isSupabaseEnabled) {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUp, error } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
@@ -227,7 +227,12 @@ export function StoreProvider({ children }) {
           },
         })
         if (error) return { ok: false, error: translateAuthError(error) }
-        return { ok: true }
+        // ถ้าไม่ต้องยืนยันอีเมล -> จะได้ session เลย -> เข้าใช้งานต่อได้ทันที
+        if (signUp?.session && signUp?.user) {
+          await loadProfile(signUp.user)
+          return { ok: true, session: true }
+        }
+        return { ok: true } // ต้องไปยืนยันอีเมล/ล็อกอินก่อน
       }
       // ----- mock -----
       const exists = users.some((u) => u.email === data.email || u.phone === data.phone)
@@ -235,7 +240,7 @@ export function StoreProvider({ children }) {
       setUsers((prev) => [...prev, { ...data, points: 100 }])
       return { ok: true }
     },
-    [users]
+    [users, loadProfile]
   )
 
   const login = useCallback(
@@ -248,8 +253,11 @@ export function StoreProvider({ children }) {
           if (!found) return { ok: false, error: 'ไม่พบผู้ใช้จากเบอร์นี้' }
           email = found
         }
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) return { ok: false, error: translateAuthError(error) }
+        // โหลดโปรไฟล์ให้เสร็จ "ก่อน" คืนค่า -> currentUser ถูกตั้งก่อนหน้า dashboard render
+        // (กัน race ที่ทำให้เด้งกลับหน้า login)
+        if (data?.user) await loadProfile(data.user)
         return { ok: true }
       }
       // ----- mock -----
@@ -260,7 +268,7 @@ export function StoreProvider({ children }) {
       setCurrentUser(user)
       return { ok: true }
     },
-    [users]
+    [users, loadProfile]
   )
 
   const logout = useCallback(async () => {

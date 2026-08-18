@@ -124,6 +124,12 @@ export default function AuthPage({ mode }) {
         pushToast(res.error, 'error')
         return
       }
+      // ถ้าสมัครแล้วได้ session เลย (ไม่ต้องยืนยันอีเมล) -> เข้า dashboard ทันที
+      if (res.session) {
+        pushToast('ลงทะเบียนสำเร็จ ยินดีต้อนรับ!', 'success')
+        navigate('/dashboard')
+        return
+      }
       pushToast('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ', 'success')
       // ส่งอีเมลไปเติมให้หน้า login อัตโนมัติ
       setForm((f) => ({ ...f, identifier: f.email }))
