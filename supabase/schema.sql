@@ -33,7 +33,8 @@ create table if not exists public.profiles (
   last_name    text not null default '',
   phone_number text not null default '',
   email        text,
-  points       int not null default 100,
+  points        int not null default 100, -- คะแนนความประพฤติ (points-system.sql)
+  reward_points int not null default 0,   -- คะแนนสะสม (reward-system.sql)
   created_at   timestamptz not null default now()
 );
 

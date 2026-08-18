@@ -138,3 +138,14 @@ export const QUICK_TIMES = [
   { label: 'บ่าย', start: '13:00', end: '16:00' },
   { label: 'เย็น', start: '17:00', end: '20:00' },
 ]
+
+// ของรางวัลจากสปอนเซอร์ (ใช้คะแนนสะสมแลก)
+export const SPONSOR_REWARDS = [
+  { id: 'print', emoji: '🖨️', name: 'พิมพ์เอกสารฟรี 20 แผ่น', sponsor: 'ห้องสมุด', cost: 30 },
+  { id: 'coffee', emoji: '☕', name: 'คูปองกาแฟ ลด 20%', sponsor: 'Café Partner', cost: 50 },
+  { id: 'book', emoji: '📖', name: 'ส่วนลดร้านหนังสือ 50 บาท', sponsor: 'BookStore', cost: 80 },
+  { id: 'meal', emoji: '🍜', name: 'คูปองอาหาร ลด 30 บาท', sponsor: 'โรงอาหาร', cost: 100 },
+]
+
+// เกณฑ์สิทธิพิเศษ: คะแนนสะสมต่ำกว่านี้ -> จองห้องประชุมไม่ได้
+export const MEETING_GATE_MIN = -50

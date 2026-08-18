@@ -23,7 +23,7 @@ const refFromId = (id) => 'LIB-' + String(id).replace(/-/g, '').slice(0, 6).toUp
 
 // ผู้ใช้ตัวอย่างสำหรับโหมด mock เท่านั้น
 const DEMO_USERS = [
-  { firstName: 'สมชาย', lastName: 'ใจดี', phone: '0812345678', email: 'demo@library.ac.th', password: '123456', points: 100 },
+  { firstName: 'สมชาย', lastName: 'ใจดี', phone: '0812345678', email: 'demo@library.ac.th', password: '123456', points: 100, rewardPoints: 0 },
 ]
 
 export function StoreProvider({ children }) {
@@ -33,7 +33,8 @@ export function StoreProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const [remoteBookedSeatIds, setRemoteBookedSeatIds] = useState(new Set()) // ที่นั่งที่ถูกจอง (โหมด Supabase)
   const [authReady, setAuthReady] = useState(!isSupabaseEnabled)
-  const [pointLogs, setPointLogs] = useState([]) // ประวัติการเปลี่ยนคะแนน
+  const [pointLogs, setPointLogs] = useState([]) // ประวัติคะแนนความประพฤติ
+  const [rewardLogs, setRewardLogs] = useState([]) // ประวัติคะแนนสะสม
 
   // maps สำหรับแปลง seatId <-> table_id (โหมด Supabase)
   const seatToTable = useRef(new Map())
@@ -88,6 +89,7 @@ export function StoreProvider({ children }) {
       phone: data?.phone_number ?? '',
       email: data?.email ?? authUser.email,
       points: data?.points ?? 100, // คะแนนความประพฤติ (ยังไม่รัน migration = default 100)
+      rewardPoints: data?.reward_points ?? 0, // คะแนนสะสม (เริ่ม 0)
     })
   }, [])
 
@@ -106,6 +108,21 @@ export function StoreProvider({ children }) {
       .order('created_at', { ascending: false })
       .limit(50)
     setPointLogs(logs || [])
+  }, [])
+
+  // โหลดคะแนนสะสม + ประวัติ (โหมด Supabase)
+  const refreshRewards = useCallback(async (userId) => {
+    const { data: prof } = await supabase.from('profiles').select('reward_points').eq('id', userId).single()
+    if (prof?.reward_points != null) {
+      setCurrentUser((u) => (u ? { ...u, rewardPoints: prof.reward_points } : u))
+    }
+    const { data: logs } = await supabase
+      .from('reward_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setRewardLogs(logs || [])
   }, [])
 
   const refreshMyBookings = useCallback(async (userId) => {
@@ -203,11 +220,13 @@ export function StoreProvider({ children }) {
     if (currentUser?.id) {
       refreshMyBookings(currentUser.id)
       refreshPoints(currentUser.id)
+      refreshRewards(currentUser.id)
     } else {
       setBookings([])
       setPointLogs([])
+      setRewardLogs([])
     }
-  }, [currentUser?.id, refreshMyBookings, refreshPoints])
+  }, [currentUser?.id, refreshMyBookings, refreshPoints, refreshRewards])
 
   // ==========================================================
   //  Authentication (รองรับทั้ง mock และ Supabase)
@@ -237,7 +256,7 @@ export function StoreProvider({ children }) {
       // ----- mock -----
       const exists = users.some((u) => u.email === data.email || u.phone === data.phone)
       if (exists) return { ok: false, error: 'อีเมลหรือเบอร์โทรนี้ถูกใช้แล้ว' }
-      setUsers((prev) => [...prev, { ...data, points: 100 }])
+      setUsers((prev) => [...prev, { ...data, points: 100, rewardPoints: 0 }])
       return { ok: true }
     },
     [users, loadProfile]
@@ -281,6 +300,10 @@ export function StoreProvider({ children }) {
   // ==========================================================
   const createBooking = useCallback(
     async ({ areaId, seatId, date, startTime, endTime }) => {
+      // สิทธิพิเศษ: คะแนนสะสมติดลบเกิน 50 -> จองห้องประชุมไม่ได้ (เช็คก่อนเพื่อ UX ที่ดี)
+      if (areaId === 'meeting' && (currentUserRef.current?.rewardPoints ?? 0) < -50) {
+        throw new Error('คะแนนสะสมของคุณติดลบเกิน 50 — ยังจองห้องประชุมไม่ได้')
+      }
       if (isSupabaseEnabled) {
         const table_id = seatToTable.current.get(seatId)
         const { data, error } = await supabase
@@ -370,6 +393,63 @@ export function StoreProvider({ children }) {
     [refreshPoints]
   )
 
+  // ==========================================================
+  //  ระบบคะแนนสะสม (Reward Points) — เพิ่ม/ลด (ติดลบได้) + แลกของรางวัล
+  // ==========================================================
+  const adjustRewardPoints = useCallback(async (delta, reason = null) => {
+    if (!currentUserRef.current) throw new Error('ยังไม่ได้เข้าสู่ระบบ')
+    if (isSupabaseEnabled) {
+      const { data, error } = await supabase.rpc('adjust_reward_points', {
+        p_user_id: currentUserRef.current.id,
+        p_delta: delta,
+        p_reason: reason,
+      })
+      if (error) throw new Error('ปรับคะแนนสะสมไม่สำเร็จ (รัน reward-system.sql แล้วหรือยัง?)')
+      setCurrentUser((u) => (u ? { ...u, rewardPoints: data } : u))
+      await refreshRewards(currentUserRef.current.id)
+      return data
+    }
+    // ----- mock -----
+    let next = 0
+    setCurrentUser((u) => {
+      next = (u?.rewardPoints ?? 0) + delta
+      return u ? { ...u, rewardPoints: next } : u
+    })
+    setRewardLogs((prev) => [
+      { id: Date.now(), delta, reason, created_at: new Date().toISOString() },
+      ...prev,
+    ])
+    return next
+  }, [refreshRewards])
+
+  const redeemReward = useCallback(async (cost, item) => {
+    if (!currentUserRef.current) throw new Error('ยังไม่ได้เข้าสู่ระบบ')
+    const cur = currentUserRef.current.rewardPoints ?? 0
+    if (isSupabaseEnabled) {
+      const { data, error } = await supabase.rpc('redeem_reward', {
+        p_user_id: currentUserRef.current.id,
+        p_cost: cost,
+        p_item: item,
+      })
+      if (error) {
+        if ((error.message || '').includes('REDEEM_INSUFFICIENT')) throw new Error('คะแนนสะสมไม่พอสำหรับแลกของรางวัลนี้')
+        throw new Error('แลกของรางวัลไม่สำเร็จ (รัน reward-system.sql แล้วหรือยัง?)')
+      }
+      setCurrentUser((u) => (u ? { ...u, rewardPoints: data } : u))
+      await refreshRewards(currentUserRef.current.id)
+      return data
+    }
+    // ----- mock -----
+    if (cur < cost) throw new Error('คะแนนสะสมไม่พอสำหรับแลกของรางวัลนี้')
+    let next = cur - cost
+    setCurrentUser((u) => (u ? { ...u, rewardPoints: (u.rewardPoints ?? 0) - cost } : u))
+    setRewardLogs((prev) => [
+      { id: Date.now(), delta: -cost, reason: 'แลกของรางวัล: ' + item, created_at: new Date().toISOString() },
+      ...prev,
+    ])
+    return next
+  }, [refreshRewards])
+
   // ที่นั่งที่ถูกจอง: โหมด mock คำนวณจาก bookings, โหมด Supabase ใช้ remoteBookedSeatIds
   const bookedForMock = useMemo(
     () => new Set(bookings.filter((b) => b.status === 'active').map((b) => b.seatId)),
@@ -396,6 +476,9 @@ export function StoreProvider({ children }) {
     isSeatBooked: isSeatBookedFinal,
     pointLogs,
     adjustPoints,
+    rewardLogs,
+    adjustRewardPoints,
+    redeemReward,
     createBooking,
     cancelBooking,
   }
@@ -422,6 +505,9 @@ function translateAuthError(error) {
 }
 
 function translateBookingError(error) {
+  if ((error.message || '').includes('REWARD_GATE')) {
+    return 'คะแนนสะสมของคุณติดลบเกิน 50 — ยังจองห้องประชุมไม่ได้'
+  }
   switch (error.code) {
     case '23P01':
       return 'ที่นั่งนี้ถูกจองในช่วงเวลาดังกล่าวแล้ว กรุณาเลือกที่นั่งหรือเวลาอื่น'

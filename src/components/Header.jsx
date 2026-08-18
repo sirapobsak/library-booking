@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { BookMarked, LogOut, CalendarCheck, User, Star } from 'lucide-react'
+import { BookMarked, LogOut, CalendarCheck, User, Star, Coins } from 'lucide-react'
 import { useStore } from '../store.jsx'
 
-// สีของคะแนนตามระดับ
+// สีของคะแนนความประพฤติตามระดับ
 const pointColor = (p) =>
   p >= 90 ? 'text-emerald-600 bg-emerald-50' : p >= 60 ? 'text-amber-600 bg-amber-50' : 'text-red-600 bg-red-50'
 
@@ -11,6 +11,7 @@ export default function Header() {
   const { currentUser, logout, activeBookings } = useStore()
   const navigate = useNavigate()
   const points = currentUser?.points ?? 100
+  const rewardPoints = currentUser?.rewardPoints ?? 0
 
   const handleLogout = () => {
     logout()
@@ -33,6 +34,19 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* คะแนนสะสม (reward) */}
+          <Link
+            to="/rewards"
+            title="คะแนนสะสม"
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-bold transition hover:brightness-95 ${
+              rewardPoints < 0 ? 'bg-red-50 text-red-600' : 'bg-slateblue-50 text-slateblue-600'
+            }`}
+          >
+            <Coins className="h-4 w-4" />
+            {rewardPoints}
+            <span className="hidden text-xs font-medium sm:inline">สะสม</span>
+          </Link>
+
           {/* คะแนนความประพฤติ */}
           <Link
             to="/points"
@@ -40,8 +54,7 @@ export default function Header() {
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-bold transition hover:brightness-95 ${pointColor(points)}`}
           >
             <Star className="h-4 w-4" />
-            {points}
-            <span className="hidden text-xs font-medium sm:inline">คะแนน</span>
+            <span className="hidden text-xs font-medium sm:inline">{points}</span>
           </Link>
 
           <Link
